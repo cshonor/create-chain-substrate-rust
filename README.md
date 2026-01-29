@@ -1,66 +1,60 @@
 <div align="center">
 
-# Polkadot SDK's Minimal Template
+# Polkadot SDK 最小模板
 
 <img height="70px" alt="Polkadot SDK Logo" src="https://github.com/paritytech/polkadot-sdk/raw/master/docs/images/Polkadot_Logo_Horizontal_Pink_White.png#gh-dark-mode-only"/>
 <img height="70px" alt="Polkadot SDK Logo" src="https://github.com/paritytech/polkadot-sdk/raw/master/docs/images/Polkadot_Logo_Horizontal_Pink_Black.png#gh-light-mode-only"/>
 
-> This is a minimal template for creating a blockchain based on Polkadot SDK.
+> 这是一个基于 Polkadot SDK 创建区块链的最小模板。
 >
-> This template is automatically updated after releases in the main [Polkadot SDK monorepo](https://github.com/paritytech/polkadot-sdk).
+> 此模板会在主 [Polkadot SDK 单体仓库](https://github.com/paritytech/polkadot-sdk) 发布后自动更新。
 
 </div>
 
-## Table of Contents
+## 目录
 
-- [Intro](#intro)
+- [简介](#简介)
 
-- [Template Structure](#template-structure)
+- [模板结构](#模板结构)
 
-- [Getting Started](#getting-started)
+- [快速开始](#快速开始)
 
-- [Starting a Minimal Template Chain](#starting-a-minimal-template-chain)
+- [启动最小模板链](#启动最小模板链)
 
-  - [Minimal Template Node](#minimal-template-node)
-  - [Zombienet with Minimal Template Node](#zombienet-with-minimal-template-node)
-  - [Connect with the Polkadot-JS Apps Front-End](#connect-with-the-polkadot-js-apps-front-end)
-  - [Takeaways](#takeaways)
+  - [最小模板节点](#最小模板节点)
+  - [使用最小模板节点的 Zombienet](#使用最小模板节点的-zombienet)
+  - [连接 Polkadot-JS Apps 前端](#连接-polkadot-js-apps-前端)
+  - [要点](#要点)
 
-- [Contributing](#contributing)
+- [贡献](#贡献)
 
-- [Getting Help](#getting-help)
+- [获取帮助](#获取帮助)
 
-## Intro
+## 简介
 
-- 🤏 This template is a minimal (in terms of complexity and the number of components)
-template for building a blockchain node.
+- 🤏 这个模板是一个最小化（在复杂性和组件数量方面）的区块链节点构建模板。
 
-- 🔧 Its runtime is configured with a single custom pallet as a starting point, and a handful of ready-made pallets
-such as a [Balances pallet](https://paritytech.github.io/polkadot-sdk/master/pallet_balances/index.html).
+- 🔧 其运行时配置了一个自定义 pallet 作为起点，以及一些现成的 pallet，例如 [Balances pallet](https://paritytech.github.io/polkadot-sdk/master/pallet_balances/index.html)。
 
-- 👤 The template has no consensus configured - it is best for experimenting with a single node network.
+- 👤 该模板未配置共识机制 - 最适合用于单节点网络的实验。
 
+## 模板结构
 
-## Template Structure
+基于 Polkadot SDK 的项目（如本项目）包含：
 
-A Polkadot SDK based project such as this one consists of:
+- 🧮 [运行时](./runtime/README.md) - 区块链的核心逻辑。
+- 🎨 [Pallets](./pallets/README.md) - 用于构建运行时的组件。
+- 💿 [节点](./node/README.md) - 二进制应用程序（不在 cargo default-members 列表中，除非构建整个工作区，否则不会编译）。
 
-- 🧮 the [Runtime](./runtime/README.md) - the core logic of the blockchain.
-- 🎨 the [Pallets](./pallets/README.md) - from which the runtime is constructed.
-- 💿 a [Node](./node/README.md) - the binary application (which is not part of the cargo default-members list and is not
-compiled unless building the entire workspace).
+## 快速开始
 
-## Getting Started
+- 🦀 该模板使用 Rust 语言。
 
-- 🦀 The template is using the Rust language.
+- 👉 请查看适用于您系统的 [Rust 安装说明](https://www.rust-lang.org/tools/install)。
 
-- 👉 Check the
-[Rust installation instructions](https://www.rust-lang.org/tools/install) for your system.
+- 🛠️ 根据您的操作系统和 Rust 版本，可能需要额外的包来编译此模板 - 请注意 Rust 编译器的输出。
 
-- 🛠️ Depending on your operating system and Rust version, there might be additional
-packages required to compile this template - please take note of the Rust compiler output.
-
-Fetch minimal template code.
+获取最小模板代码。
 
 ```sh
 git clone https://github.com/paritytech/polkadot-sdk-minimal-template.git minimal-template
@@ -68,82 +62,71 @@ git clone https://github.com/paritytech/polkadot-sdk-minimal-template.git minima
 cd minimal-template
 ```
 
-## Starting a Minimal Template Chain
+## 启动最小模板链
 
-### Minimal Template Node
+### 最小模板节点
 
-#### Build both node & runtime
+#### 构建节点和运行时
 
 ```sh
 cargo build --workspace --release
 ```
 
-🐳 Alternatively, build the docker image which builds all the workspace members,
-and has as entry point the node binary:
+🐳 或者，构建 Docker 镜像，该镜像会构建所有工作区成员，并以节点二进制文件作为入口点：
 
 ```sh
 docker build . -t polkadot-sdk-minimal-template
 ```
 
-#### Start the `minimal-template-node`
+#### 启动 `minimal-template-node`
 
-The `minimal-template-node` has dependency on the `minimal-template-runtime`. It will use
-the `minimal_template_runtime::WASM_BINARY` constant (which holds the WASM blob as a byte
-array) for chain spec building, while starting.
+`minimal-template-node` 依赖于 `minimal-template-runtime`。它将使用 `minimal_template_runtime::WASM_BINARY` 常量（该常量将 WASM 二进制文件保存为字节数组）来构建链规范，同时启动。
 
 ```sh
 <target/release/path/to/minimal-template-node> --tmp --consensus manual-seal-3000
-# or via docker
+# 或通过 docker
 docker run --rm polkadot-sdk-minimal-template
 ```
 
-#### Zombienet with `minimal-template-node`
+#### 使用 `minimal-template-node` 的 Zombienet
 
-For this one we just need to have `zombienet` installed and run:
+对于这个，我们只需要安装 `zombienet` 并运行：
 
 ```sh
 zombienet --provider native spawn zombienet-multi-node.toml
 ```
 
-### Connect with the Polkadot-JS Apps Front-End
+### 连接 Polkadot-JS Apps 前端
 
-- 🌐 You can interact with your local node using the
-hosted version of the [Polkadot/Substrate
-Portal](https://polkadot.js.org/apps/#/explorer?rpc=ws://localhost:9944).
+- 🌐 您可以使用 [Polkadot/Substrate Portal](https://polkadot.js.org/apps/#/explorer?rpc=ws://localhost:9944) 的托管版本与本地节点交互。
 
-- 🪐 A hosted version is also
-available on [IPFS](https://dotapps.io/).
+- 🪐 在 [IPFS](https://dotapps.io/) 上也提供了托管版本。
 
-- 🧑‍🔧 You can also find the source code and instructions for hosting your own instance in the
-[`polkadot-js/apps`](https://github.com/polkadot-js/apps) repository.
+- 🧑‍🔧 您还可以在 [`polkadot-js/apps`](https://github.com/polkadot-js/apps) 仓库中找到源代码和托管自己实例的说明。
 
-### Takeaways
+### 要点
 
-Previously minimal template's development chains:
+之前最小模板的开发链：
 
-- ❌ Started in a multi-node setup will produce forks because minimal lacks consensus.
-- 🧹 Do not persist the state.
-- 💰 Are pre-configured with a genesis state that includes several pre-funded development accounts.
-- 🧑‍⚖️ One development account (`ALICE`) is used as `sudo` accounts.
+- ❌ 在多节点设置中启动会产生分叉，因为最小模板缺少共识机制。
+- 🧹 不会持久化状态。
+- 💰 预配置了包含多个预充值开发账户的创世状态。
+- 🧑‍⚖️ 一个开发账户（`ALICE`）用作 `sudo` 账户。
 
-## Contributing
+## 贡献
 
-- 🔄 This template is automatically updated after releases in the main [Polkadot SDK monorepo](https://github.com/paritytech/polkadot-sdk).
+- 🔄 此模板会在主 [Polkadot SDK 单体仓库](https://github.com/paritytech/polkadot-sdk) 发布后自动更新。
 
-- ➡️ Any pull requests should be directed to this [source](https://github.com/paritytech/polkadot-sdk/tree/master/templates/minimal).
+- ➡️ 任何拉取请求都应指向此[源](https://github.com/paritytech/polkadot-sdk/tree/master/templates/minimal)。
 
-- 😇 Please refer to the monorepo's
-[contribution guidelines](https://github.com/paritytech/polkadot-sdk/blob/master/docs/contributor/CONTRIBUTING.md) and
-[Code of Conduct](https://github.com/paritytech/polkadot-sdk/blob/master/docs/contributor/CODE_OF_CONDUCT.md).
+- 😇 请参考单体仓库的[贡献指南](https://github.com/paritytech/polkadot-sdk/blob/master/docs/contributor/CONTRIBUTING.md)和[行为准则](https://github.com/paritytech/polkadot-sdk/blob/master/docs/contributor/CODE_OF_CONDUCT.md)。
 
-## Getting Help
+## 获取帮助
 
-- 🧑‍🏫 To learn about Polkadot in general, [docs.Polkadot.com](https://docs.polkadot.com/) website is a good starting point.
+- 🧑‍🏫 要了解 Polkadot 的一般信息，[docs.Polkadot.com](https://docs.polkadot.com/) 网站是一个很好的起点。
 
-- 🧑‍🔧 For technical introduction, [here](https://github.com/paritytech/polkadot-sdk#-documentation) are
-the Polkadot SDK documentation resources.
+- 🧑‍🔧 对于技术介绍，[这里](https://github.com/paritytech/polkadot-sdk#-documentation)是 Polkadot SDK 文档资源。
 
-- 👥 Additionally, there are [GitHub issues](https://github.com/paritytech/polkadot-sdk/issues) and
-[Substrate StackExchange](https://substrate.stackexchange.com/).
-- 👥You can also reach out on the [Official Polkadot discord server](https://polkadot-discord.w3f.tools/)
-- 🧑Reach out on [Telegram](https://t.me/substratedevs) for more questions and discussions
+- 👥 此外，还有 [GitHub issues](https://github.com/paritytech/polkadot-sdk/issues) 和 [Substrate StackExchange](https://substrate.stackexchange.com/)。
+- 👥 您也可以在 [官方 Polkadot Discord 服务器](https://polkadot-discord.w3f.tools/) 上联系
+- 🧑 在 [Telegram](https://t.me/substratedevs) 上联系，获取更多问题和讨论
