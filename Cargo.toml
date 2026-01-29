@@ -1,0 +1,34 @@
+[workspace.package]
+authors = ["Substrate DevHub <https://github.com/substrate-developer-hub>"]
+edition = "2021"
+homepage = "https://substrate.io"
+license = "Unlicense"
+repository = "https://github.com/paritytech/polkadot-sdk"
+version = "0.0.0"
+
+[workspace]
+resolver = "2"
+members = [
+    "node",
+    "runtime",
+    "pallets/template",
+]
+
+[workspace.lints.rust]
+suspicious_double_ref_op = { level = "allow", priority = 2 }
+useless_deprecated = { level = "allow", priority = 2 }
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(build_opt_level, values("3"))',
+    'cfg(build_profile, values("debug", "release"))',
+    'cfg(enable_alloc_error_handler)',
+    'cfg(fuzzing)',
+    'cfg(ignore_flaky_test)',
+    'cfg(substrate_runtime)',
+] }
+
+[workspace.lints.clippy]
+all = { level = "allow", priority = 0 }
+
+[workspace.dependencies]
+polkadot-sdk = { version = "1.0", default-features = false }
+

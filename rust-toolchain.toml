@@ -1,0 +1,9 @@
+[toolchain]
+channel = "stable"
+components = ["rustfmt", "clippy"]
+targets = ["wasm32-unknown-unknown"]
+
+# 注意：Wasm 运行时编译需要使用 WASM_BUILD_TOOLCHAIN 环境变量
+# 指定兼容的 nightly 版本（如 nightly-2024-07-01）
+# 构建命令示例：
+# WASM_BUILD_TOOLCHAIN=nightly-2024-07-01 RUSTFLAGS='-A useless_deprecated' cargo build --release --locked
