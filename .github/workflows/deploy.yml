@@ -1,0 +1,116 @@
+name: CD - Deploy to Server
+
+on:
+  push:
+    branches: [ main, master, rebuld ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  SERVER_HOST: ${{ secrets.SERVER_HOST }}
+  SERVER_USER: ${{ secrets.SERVER_USER }}
+  SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Install nightly toolchain
+        run: |
+          rustup toolchain install nightly
+          rustup target add wasm32-unknown-unknown --toolchain nightly
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            libclang-dev \
+            libssl-dev \
+            pkg-config \
+            libudev-dev \
+            protobuf-compiler \
+            cmake \
+            libsqlite3-dev \
+            libzstd-dev
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build release
+        run: |
+          export CARGO_BUILD_JOBS=4
+          export RUSTFLAGS='-A useless_deprecated'
+          export WASM_BUILD_TOOLCHAIN=nightly-2024-07-01
+          cargo build --release --locked
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p ${{ env.SERVER_PORT }} ${{ env.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create deployment directory
+        run: |
+          ssh -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} \
+            "mkdir -p ~/deployments/substrate"
+
+      - name: Upload binary to server
+        run: |
+          scp -P ${{ env.SERVER_PORT }} \
+            target/release/minimal-template-node \
+            ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }}:~/deployments/substrate/
+
+      - name: Upload deployment script
+        run: |
+          scp -P ${{ env.SERVER_PORT }} \
+            scripts/deploy.sh \
+            ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }}:~/deployments/substrate/
+
+      - name: Deploy on server
+        run: |
+          ssh -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} << 'EOF'
+            cd ~/deployments/substrate
+            chmod +x deploy.sh
+            ./deploy.sh
+          EOF
+
+      - name: Verify deployment
+        run: |
+          ssh -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} \
+            "test -f ~/deployments/substrate/minimal-template-node && echo 'Deployment successful' || echo 'Deployment failed'"
+

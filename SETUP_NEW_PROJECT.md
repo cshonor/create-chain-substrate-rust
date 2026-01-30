@@ -6,6 +6,8 @@
 - ✅ 正在克隆 polkadot-sdk 仓库（进行中）
 - ✅ Rust 环境已配置（stable + nightly）
 - ✅ 已创建 rust-toolchain.toml 配置文件
+- ✅ 已安装 rust-src 组件（stable 工具链）
+- ✅ 项目结构已整理，代码已添加中文注释
 
 ## 下一步操作
 
@@ -52,9 +54,13 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/paritytec
 2. **Rust 工具链**已配置：
    ```bash
    rustup default stable
+   # 编译 WASM 运行时需要 rust-src 组件（stable 和 nightly 都需要）
+   rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
    rustup component add rust-src --toolchain nightly
    rustup target add wasm32-unknown-unknown --toolchain nightly
    ```
+   
+   **注意**：如果编译时遇到错误 "Cannot compile the WASM runtime: no standard library sources found"，说明缺少 `rust-src` 组件，需要为对应的工具链安装。
 
 3. **构建项目**：
    ```bash
@@ -62,9 +68,33 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/paritytec
    WASM_BUILD_TOOLCHAIN=nightly-2024-07-01 RUSTFLAGS='-A useless_deprecated' cargo build --release --locked
    ```
 
+## 编译测试
+
+### 遇到的问题和解决方案
+
+**问题**：编译时出现错误
+```
+error: failed to run custom build command for `frame-storage-access-test-runtime v0.6.0`
+Cannot compile the WASM runtime: no standard library sources found at /root/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/src/rust!
+```
+
+**解决方案**：
+```bash
+rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
+```
+
+**测试编译**：
+```bash
+cd /root/projects/substrate
+cargo check --package minimal-template-runtime --package minimal-template-node
+# 或完整编译
+cargo build --workspace --release
+```
+
 ## 注意事项
 
 - 建议将项目移到 WSL 的 Linux 文件系统（`~/substrate`）以获得更好的性能
 - 如果使用本地 polkadot-sdk，需要更新 `Cargo.toml` 中的路径配置
+- 编译 WASM 运行时需要 `rust-src` 组件，确保已为使用的工具链安装
 
 
