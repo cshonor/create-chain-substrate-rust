@@ -2,7 +2,12 @@ name: Build Only (No Deploy)
 
 on:
   push:
-    branches: [ develop, feature/* ]
+    branches: 
+      - develop
+      - feature/**
+      - main
+      - master
+      - '!rebuld'  # 排除 rebuld 分支（rebuld 使用 deploy.yml）
   workflow_dispatch:
 
 env:

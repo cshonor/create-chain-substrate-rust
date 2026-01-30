@@ -2,9 +2,9 @@ name: CI - Build and Test
 
 on:
   push:
-    branches: [ main, master, rebuld ]
+    branches: [ '*' ]  # 所有分支都触发 CI（构建和测试）
   pull_request:
-    branches: [ main, master, rebuld ]
+    branches: [ '*' ]  # 所有 PR 都触发 CI
 
 env:
   CARGO_TERM_COLOR: always

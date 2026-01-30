@@ -24,7 +24,7 @@
 ### 2. CD - Deploy to Server (`deploy.yml`)
 
 **触发条件**:
-- Push 到 `main`、`master` 或 `rebuld` 分支
+- Push 到 `rebuld` 分支（**只有 rebuld 分支会触发部署**）
 - 创建版本标签 (`v*`)
 - 手动触发 (workflow_dispatch)
 
@@ -36,7 +36,7 @@
 ### 3. Build Only (`build-only.yml`)
 
 **触发条件**:
-- Push 到 `develop` 或 `feature/*` 分支
+- Push 到 `develop`、`feature/*`、`main`、`master` 分支（**排除 rebuld 分支**）
 - 手动触发
 
 **执行内容**:
@@ -151,11 +151,11 @@ sudo systemctl start substrate-node
 
 ### 自动部署
 
-1. **Push 代码到主分支**：
+1. **Push 代码到 rebuld 分支**（只有 rebuld 分支会触发部署）：
    ```bash
    git add .
    git commit -m "Update code"
-   git push origin main
+   git push origin rebuld
    ```
 
 2. **查看部署状态**：
@@ -191,12 +191,12 @@ git push origin v1.0.0
 - 不上传产物到服务器
 
 ### `.github/workflows/deploy.yml`
-- 仅在主分支 push 时运行
+- **仅在 rebuld 分支 push 时运行**
 - 构建并部署到服务器
 - 需要配置 SSH 密钥
 
 ### `.github/workflows/build-only.yml`
-- 开发分支构建
+- 其他分支构建（develop、feature/*、main、master，**排除 rebuld**）
 - 仅构建，不部署
 
 ## 安全建议

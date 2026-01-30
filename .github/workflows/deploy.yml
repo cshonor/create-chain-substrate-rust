@@ -2,7 +2,7 @@ name: CD - Deploy to Server
 
 on:
   push:
-    branches: [ main, master, rebuld ]
+    branches: [ rebuld ]  # 只有 rebuld 分支触发部署
     tags:
       - 'v*'
   workflow_dispatch:
