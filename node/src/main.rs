@@ -16,14 +16,17 @@
 // limitations under the License.
 
 //! Substrate Node Template CLI library.
+//! Substrate 节点模板 CLI 库
 #![warn(missing_docs)]
 
-mod chain_spec;
-mod cli;
-mod command;
-mod rpc;
-mod service;
+mod chain_spec;  // 链规范配置模块
+mod cli;         // 命令行接口模块
+mod command;     // 命令处理模块
+mod rpc;         // RPC 接口模块
+mod service;     // 服务构建模块
 
+/// 程序入口点
+/// 解析命令行参数并执行相应的命令
 fn main() -> polkadot_sdk::sc_cli::Result<()> {
 	command::run()
 }

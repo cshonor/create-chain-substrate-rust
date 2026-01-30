@@ -17,13 +17,23 @@
 
 use polkadot_sdk::*;
 
+/// 共识机制类型
+/// 定义节点支持的共识算法类型
 #[derive(Debug, Clone)]
 pub enum Consensus {
+	/// 手动出块，参数为出块间隔（毫秒）
 	ManualSeal(u64),
+	/// 即时出块（收到交易立即出块）
 	InstantSeal,
+	/// 无共识（仅用于测试）
 	None,
 }
 
+/// 从字符串解析共识类型
+/// 支持的格式：
+/// - "instant-seal" -> InstantSeal
+/// - "manual-seal-3000" -> ManualSeal(3000)
+/// - "none" -> None
 impl std::str::FromStr for Consensus {
 	type Err = String;
 
@@ -40,53 +50,59 @@ impl std::str::FromStr for Consensus {
 	}
 }
 
+/// 命令行参数结构体
+/// 定义节点支持的所有命令行选项
 #[derive(Debug, clap::Parser)]
 pub struct Cli {
+	/// 子命令（可选）
 	#[command(subcommand)]
 	pub subcommand: Option<Subcommand>,
 
+	/// 共识机制类型，默认为手动出块，间隔 3000 毫秒
 	#[clap(long, default_value = "manual-seal-3000")]
 	pub consensus: Consensus,
 
+	/// 运行节点的通用参数（如 --dev, --tmp 等）
 	#[clap(flatten)]
 	pub run: sc_cli::RunCmd,
 }
 
+/// 子命令枚举
+/// 定义节点支持的所有子命令
 #[derive(Debug, clap::Subcommand)]
 pub enum Subcommand {
-	/// Key management cli utilities
+	/// 密钥管理 CLI 工具
 	#[command(subcommand)]
 	Key(sc_cli::KeySubcommand),
 
-	/// Build a chain specification.
-	/// DEPRECATED: `build-spec` command will be removed after 1/04/2026. Use `export-chain-spec`
-	/// command instead.
+	/// 构建链规范
+	/// 已弃用：`build-spec` 命令将在 2026/04/01 后移除，请使用 `export-chain-spec` 命令
 	#[deprecated(
 		note = "build-spec command will be removed after 1/04/2026. Use export-chain-spec command instead"
 	)]
 	BuildSpec(sc_cli::BuildSpecCmd),
 
-	/// Export the chain specification.
+	/// 导出链规范
 	ExportChainSpec(sc_cli::ExportChainSpecCmd),
 
-	/// Validate blocks.
+	/// 验证区块
 	CheckBlock(sc_cli::CheckBlockCmd),
 
-	/// Export blocks.
+	/// 导出区块
 	ExportBlocks(sc_cli::ExportBlocksCmd),
 
-	/// Export the state of a given block into a chain spec.
+	/// 将指定区块的状态导出为链规范
 	ExportState(sc_cli::ExportStateCmd),
 
-	/// Import blocks.
+	/// 导入区块
 	ImportBlocks(sc_cli::ImportBlocksCmd),
 
-	/// Remove the whole chain.
+	/// 删除整个链数据
 	PurgeChain(sc_cli::PurgeChainCmd),
 
-	/// Revert the chain to a previous state.
+	/// 将链回退到之前的状态
 	Revert(sc_cli::RevertCmd),
 
-	/// Db meta columns information.
+	/// 数据库元列信息
 	ChainInfo(sc_cli::ChainInfoCmd),
 }

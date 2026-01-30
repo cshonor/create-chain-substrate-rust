@@ -15,7 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// 链规范配置模块
 pub mod chain_spec;
+/// 命令行接口模块（内部使用）
 pub(crate) mod cli;
+/// RPC 接口模块
 pub mod rpc;
+/// 服务构建模块
 pub mod service;

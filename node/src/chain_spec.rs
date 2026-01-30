@@ -21,22 +21,27 @@ use polkadot_sdk::{
 	*,
 };
 
-/// This is a specialization of the general Substrate ChainSpec type.
+/// 链规范类型别名
+/// 这是通用 Substrate ChainSpec 类型的特化版本
 pub type ChainSpec = sc_service::GenericChainSpec;
 
+/// 获取链的属性配置
+/// 包括代币小数位数和代币符号
 fn props() -> Properties {
 	let mut properties = Properties::new();
-	properties.insert("tokenDecimals".to_string(), 0.into());
-	properties.insert("tokenSymbol".to_string(), "MINI".into());
+	properties.insert("tokenDecimals".to_string(), 0.into());  // 代币小数位数
+	properties.insert("tokenSymbol".to_string(), "MINI".into()); // 代币符号
 	properties
 }
 
+/// 创建开发链规范
+/// 用于本地开发和测试的链配置
 pub fn development_chain_spec() -> Result<ChainSpec, String> {
 	Ok(ChainSpec::builder(WASM_BINARY.expect("Development wasm not available"), Default::default())
-		.with_name("Development")
-		.with_id("dev")
-		.with_chain_type(ChainType::Development)
-		.with_genesis_config_preset_name(sp_genesis_builder::DEV_RUNTIME_PRESET)
-		.with_properties(props())
+		.with_name("Development")  // 链名称
+		.with_id("dev")            // 链 ID
+		.with_chain_type(ChainType::Development)  // 链类型：开发链
+		.with_genesis_config_preset_name(sp_genesis_builder::DEV_RUNTIME_PRESET)  // 创世配置预设
+		.with_properties(props())  // 链属性
 		.build())
 }

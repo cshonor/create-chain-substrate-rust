@@ -15,10 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! A collection of node-specific RPC methods.
-//! Substrate provides the `sc-rpc` crate, which defines the core RPC layer
-//! used by Substrate nodes. This file extends those RPC definitions with
-//! capabilities that are specific to this project's runtime configuration.
+//! 节点特定的 RPC 方法集合
+//! Substrate 提供了 `sc-rpc` crate，定义了 Substrate 节点使用的核心 RPC 层
+//! 此文件扩展了那些 RPC 定义，添加了特定于此项目运行时配置的功能
 
 #![warn(missing_docs)]
 
@@ -31,16 +30,18 @@ use polkadot_sdk::{
 };
 use std::sync::Arc;
 
-/// Full client dependencies.
+/// 完整客户端依赖项
+/// 包含 RPC 服务所需的所有依赖
 pub struct FullDeps<C, P> {
-	/// The client instance to use.
+	/// 要使用的客户端实例
 	pub client: Arc<C>,
-	/// Transaction pool instance.
+	/// 交易池实例
 	pub pool: Arc<P>,
 }
 
 #[docify::export]
-/// Instantiate all full RPC extensions.
+/// 实例化所有完整的 RPC 扩展
+/// 创建并配置所有 RPC 方法模块
 pub fn create_full<C, P>(
 	deps: FullDeps<C, P>,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
@@ -60,6 +61,7 @@ where
 	let mut module = RpcModule::new(());
 	let FullDeps { client, pool } = deps;
 
+	// 添加系统 RPC 方法（账户 nonce 等）
 	module.merge(System::new(client.clone(), pool.clone()).into_rpc())?;
 
 	Ok(module)

@@ -22,31 +22,41 @@ use crate::{
 };
 use polkadot_sdk::{sc_cli::SubstrateCli, sc_service::PartialComponents, *};
 
+/// 实现 SubstrateCli trait，提供 CLI 的基本信息
 impl SubstrateCli for Cli {
+	/// 实现名称
 	fn impl_name() -> String {
 		"Substrate Node".into()
 	}
 
+	/// 实现版本号
 	fn impl_version() -> String {
 		env!("SUBSTRATE_CLI_IMPL_VERSION").into()
 	}
 
+	/// 描述信息
 	fn description() -> String {
 		env!("CARGO_PKG_DESCRIPTION").into()
 	}
 
+	/// 作者信息
 	fn author() -> String {
 		env!("CARGO_PKG_AUTHORS").into()
 	}
 
+	/// 支持 URL
 	fn support_url() -> String {
 		"support.anonymous.an".into()
 	}
 
+	/// 版权起始年份
 	fn copyright_start_year() -> i32 {
 		2017
 	}
 
+	/// 加载链规范
+	/// - "dev" -> 开发链规范
+	/// - 其他 -> 从 JSON 文件加载
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
 		Ok(match id {
 			"dev" => Box::new(chain_spec::development_chain_spec()?),
@@ -56,7 +66,8 @@ impl SubstrateCli for Cli {
 	}
 }
 
-/// Parse and run command line arguments
+/// 解析并执行命令行参数
+/// 根据不同的子命令执行相应的操作
 pub fn run() -> sc_cli::Result<()> {
 	let cli = Cli::from_args();
 
@@ -119,9 +130,11 @@ pub fn run() -> sc_cli::Result<()> {
 				cmd.run::<minimal_template_runtime::interface::OpaqueBlock>(&config)
 			})
 		},
+		/// 无子命令时，启动节点
 		None => {
 			let runner = cli.create_runner(&cli.run)?;
 			runner.run_node_until_exit(|config| async move {
+				// 根据网络后端类型选择相应的实现
 				match config.network.network_backend {
 					sc_network::config::NetworkBackendType::Libp2p =>
 						service::new_full::<sc_network::NetworkWorker<_, _>>(config, cli.consensus)

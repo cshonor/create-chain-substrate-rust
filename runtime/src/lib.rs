@@ -15,11 +15,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! A minimal runtime that includes the template [`pallet`](`pallet_minimal_template`).
+//! 一个包含模板 [`pallet`](`pallet_minimal_template`) 的最小运行时
+//! 
+//! 这是区块链的核心逻辑，定义了所有 pallet 的配置和组合方式
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-// Make the WASM binary available.
+// 使 WASM 二进制文件可用
+// 在标准库模式下，包含编译后的 WASM 运行时二进制文件
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
@@ -36,7 +39,8 @@ use polkadot_sdk::{
 	*,
 };
 
-/// Provides getters for genesis configuration presets.
+/// 提供创世配置预设的获取器
+/// 定义不同环境的创世状态配置
 pub mod genesis_config_presets {
 	use super::*;
 	use crate::{
@@ -48,15 +52,19 @@ pub mod genesis_config_presets {
 	use alloc::{vec, vec::Vec};
 	use serde_json::Value;
 
-	/// Returns a development genesis config preset.
+	/// 返回开发环境的创世配置预设
+	/// 为所有测试账户预充值，并设置 Alice 为 sudo 账户
 	pub fn development_config_genesis() -> Value {
+		// 计算预充值金额：最小余额的 1000 倍，至少为 1
 		let endowment = <MinimumBalance as Get<Balance>>::get().max(1) * 1000;
 		frame_support::build_struct_json_patch!(RuntimeGenesisConfig {
 			balances: BalancesConfig {
+				// 为所有测试账户（Alice, Bob, Charlie 等）预充值
 				balances: Sr25519Keyring::iter()
 					.map(|a| (a.to_account_id(), endowment))
 					.collect::<Vec<_>>(),
 			},
+			// 设置 Alice 为 sudo（超级管理员）账户
 			sudo: SudoConfig { key: Some(Sr25519Keyring::Alice.to_account_id()) },
 		})
 	}
@@ -80,17 +88,18 @@ pub mod genesis_config_presets {
 	}
 }
 
-/// The runtime version.
+/// 运行时版本信息
+/// 用于标识和区分不同版本的运行时
 #[runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-	spec_name: alloc::borrow::Cow::Borrowed("minimal-template-runtime"),
-	impl_name: alloc::borrow::Cow::Borrowed("minimal-template-runtime"),
-	authoring_version: 1,
-	spec_version: 0,
-	impl_version: 1,
-	apis: RUNTIME_API_VERSIONS,
-	transaction_version: 1,
-	system_version: 1,
+	spec_name: alloc::borrow::Cow::Borrowed("minimal-template-runtime"),  // 规范名称
+	impl_name: alloc::borrow::Cow::Borrowed("minimal-template-runtime"),  // 实现名称
+	authoring_version: 1,      // 出块版本（影响出块者兼容性）
+	spec_version: 0,           // 规范版本（影响链规范兼容性）
+	impl_version: 1,           // 实现版本（用于区分实现）
+	apis: RUNTIME_API_VERSIONS, // 运行时 API 版本
+	transaction_version: 1,     // 交易版本（影响交易格式）
+	system_version: 1,         // 系统版本
 };
 
 /// The version information used to identify this runtime when compiled natively.
@@ -99,73 +108,79 @@ pub fn native_version() -> NativeVersion {
 	NativeVersion { runtime_version: VERSION, can_author_with: Default::default() }
 }
 
-/// The transaction extensions that are added to the runtime.
+/// 运行时添加的交易扩展
+/// 定义交易在执行前需要经过的所有检查和操作（按顺序执行）
 type TxExtension = (
-	// Authorize calls that validate themselves.
+	// 授权调用，验证调用本身的有效性
 	frame_system::AuthorizeCall<Runtime>,
-	// Checks that the sender is not the zero address.
+	// 检查发送者不是零地址
 	frame_system::CheckNonZeroSender<Runtime>,
-	// Checks that the runtime version is correct.
+	// 检查运行时版本是否正确
 	frame_system::CheckSpecVersion<Runtime>,
-	// Checks that the transaction version is correct.
+	// 检查交易版本是否正确
 	frame_system::CheckTxVersion<Runtime>,
-	// Checks that the genesis hash is correct.
+	// 检查创世哈希是否正确
 	frame_system::CheckGenesis<Runtime>,
-	// Checks that the era is valid.
+	// 检查 era（时代）是否有效
 	frame_system::CheckEra<Runtime>,
-	// Checks that the nonce is valid.
+	// 检查 nonce（交易序号）是否有效
 	frame_system::CheckNonce<Runtime>,
-	// Checks that the weight is valid.
+	// 检查权重是否有效
 	frame_system::CheckWeight<Runtime>,
-	// Ensures that the sender has enough funds to pay for the transaction
-	// and deducts the fee from the sender's account.
+	// 确保发送者有足够的资金支付交易费用，并从发送者账户扣除费用
 	pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-	// Reclaim the unused weight from the block using post dispatch information.
-	// It must be last in the pipeline in order to catch the refund in previous transaction
-	// extensions
+	// 使用调度后信息回收区块中未使用的权重
+	// 必须在管道的最后，以便捕获之前交易扩展中的退款
 	frame_system::WeightReclaim<Runtime>,
 );
 
-// Composes the runtime by adding all the used pallets and deriving necessary types.
+// 通过添加所有使用的 pallet 并派生必要的类型来组合运行时
 #[frame_construct_runtime]
 mod runtime {
-	/// The main runtime type.
+	/// 主运行时类型
+	/// 这是整个运行时的核心结构，包含所有 pallet 的配置
 	#[runtime::runtime]
 	#[runtime::derive(
-		RuntimeCall,
-		RuntimeEvent,
-		RuntimeError,
-		RuntimeOrigin,
-		RuntimeFreezeReason,
-		RuntimeHoldReason,
-		RuntimeSlashReason,
-		RuntimeLockId,
-		RuntimeTask,
-		RuntimeViewFunction
+		RuntimeCall,           // 运行时调用类型
+		RuntimeEvent,          // 运行时事件类型
+		RuntimeError,          // 运行时错误类型
+		RuntimeOrigin,         // 运行时来源类型
+		RuntimeFreezeReason,  // 冻结原因类型
+		RuntimeHoldReason,     // 保留原因类型
+		RuntimeSlashReason,    // 惩罚原因类型
+		RuntimeLockId,         // 锁定 ID 类型
+		RuntimeTask,           // 运行时任务类型
+		RuntimeViewFunction    // 运行时视图函数类型
 	)]
 	pub struct Runtime;
 
-	/// Mandatory system pallet that should always be included in a FRAME runtime.
+	/// 系统 pallet（索引 0）
+	/// 必须在 FRAME 运行时中包含的强制性系统 pallet，提供基础功能
 	#[runtime::pallet_index(0)]
 	pub type System = frame_system::Pallet<Runtime>;
 
-	/// Provides a way for consensus systems to set and check the onchain time.
+	/// 时间戳 pallet（索引 1）
+	/// 为共识系统提供设置和检查链上时间的方式
 	#[runtime::pallet_index(1)]
 	pub type Timestamp = pallet_timestamp::Pallet<Runtime>;
 
-	/// Provides the ability to keep track of balances.
+	/// 余额 pallet（索引 2）
+	/// 提供跟踪账户余额的能力
 	#[runtime::pallet_index(2)]
 	pub type Balances = pallet_balances::Pallet<Runtime>;
 
-	/// Provides a way to execute privileged functions.
+	/// Sudo pallet（索引 3）
+	/// 提供执行特权函数的方式（超级管理员功能）
 	#[runtime::pallet_index(3)]
 	pub type Sudo = pallet_sudo::Pallet<Runtime>;
 
-	/// Provides the ability to charge for extrinsic execution.
+	/// 交易支付 pallet（索引 4）
+	/// 提供对外部调用执行收费的能力
 	#[runtime::pallet_index(4)]
 	pub type TransactionPayment = pallet_transaction_payment::Pallet<Runtime>;
 
-	/// A minimal pallet template.
+	/// 最小模板 pallet（索引 5）
+	/// 一个最小化的 pallet 模板，作为自定义 pallet 的起点
 	#[runtime::pallet_index(5)]
 	pub type Template = pallet_minimal_template::Pallet<Runtime>;
 }
@@ -174,40 +189,41 @@ parameter_types! {
 	pub const Version: RuntimeVersion = VERSION;
 }
 
-/// Implements the types required for the system pallet.
+/// 实现系统 pallet 所需的类型
+/// 配置系统 pallet 的基本参数
 #[derive_impl(frame_system::config_preludes::SolochainDefaultConfig)]
 impl frame_system::Config for Runtime {
-	type Block = Block;
-	type Version = Version;
-	// Use the account data from the balances pallet
+	type Block = Block;           // 区块类型
+	type Version = Version;       // 版本信息
+	// 使用余额 pallet 的账户数据
 	type AccountData = pallet_balances::AccountData<<Runtime as pallet_balances::Config>::Balance>;
 }
 
-// Implements the types required for the balances pallet.
+// 实现余额 pallet 所需的类型
 #[derive_impl(pallet_balances::config_preludes::TestDefaultConfig)]
 impl pallet_balances::Config for Runtime {
-	type AccountStore = System;
+	type AccountStore = System;  // 使用系统 pallet 存储账户数据
 }
 
-// Implements the types required for the sudo pallet.
+// 实现 sudo pallet 所需的类型
 #[derive_impl(pallet_sudo::config_preludes::TestDefaultConfig)]
 impl pallet_sudo::Config for Runtime {}
 
-// Implements the types required for the sudo pallet.
+// 实现时间戳 pallet 所需的类型
 #[derive_impl(pallet_timestamp::config_preludes::TestDefaultConfig)]
 impl pallet_timestamp::Config for Runtime {}
 
-// Implements the types required for the transaction payment pallet.
+// 实现交易支付 pallet 所需的类型
 #[derive_impl(pallet_transaction_payment::config_preludes::TestDefaultConfig)]
 impl pallet_transaction_payment::Config for Runtime {
 	type OnChargeTransaction = pallet_transaction_payment::FungibleAdapter<Balances, ()>;
-	// Setting fee as independent of the weight of the extrinsic for demo purposes
+	// 为了演示目的，将费用设置为与外部调用的权重无关（免费）
 	type WeightToFee = NoFee<<Self as pallet_balances::Config>::Balance>;
-	// Setting fee as fixed for any length of the call data for demo purposes
+	// 为了演示目的，将费用设置为固定值，与调用数据长度无关
 	type LengthToFee = FixedFee<1, <Self as pallet_balances::Config>::Balance>;
 }
 
-// Implements the types required for the template pallet.
+// 实现模板 pallet 所需的类型
 impl pallet_minimal_template::Config for Runtime {}
 
 type Block = frame::runtime::types_common::BlockOf<Runtime, TxExtension>;
