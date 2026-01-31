@@ -31,15 +31,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.88.0
-        with:
-          components: rustfmt, clippy, rust-src
-          targets: wasm32-unknown-unknown
-
-      - name: Install nightly toolchain for WASM
+      - name: Install Rust 1.88.0
         run: |
-          rustup toolchain install nightly-2024-07-01
+          # 确保 rustup 已安装（GitHub Actions 通常已预装）
+          if ! command -v rustup &> /dev/null; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source $HOME/.cargo/env
+          fi
+          rustup toolchain install 1.88.0
+          rustup default 1.88.0
+          rustup component add rustfmt clippy rust-src --toolchain 1.88.0
+          rustup target add wasm32-unknown-unknown --toolchain 1.88.0
+          rustc --version
+          cargo --version
+
+      - name: Install nightly toolchain for WASM (with rust-src)
+        run: |
+          # 关键：nightly 也必须安装 rust-src，否则 WASM 编译会失败
+          rustup toolchain install nightly-2024-07-01 --component rust-src
           rustup target add wasm32-unknown-unknown --toolchain nightly-2024-07-01
 
       - name: Install system dependencies
@@ -56,38 +65,73 @@ jobs:
             libsqlite3-dev \
             libzstd-dev
 
-      - name: Cache Cargo registry
+      - name: Clean runner disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          df -h
+
+      - name: Cache Cargo dependencies (optimized)
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ~/.cargo/registry/index
+            ~/.cargo/registry/cache
+            ~/.cargo/git/db
+          key: ${{ runner.os }}-cargo-deps-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-cargo-deps-
 
-      - name: Build release
+      - name: Cache Target (optional, may invalidate on env changes)
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-target-${{ hashFiles('**/Cargo.lock') }}-${{ env.WASM_BUILD_TOOLCHAIN }}
+          restore-keys: |
+            ${{ runner.os }}-target-
+
+      - name: Regenerate Cargo.lock (ensure Linux compatibility)
         run: |
-          export CARGO_BUILD_JOBS=4
+          rm -f Cargo.lock
+          cargo generate-lockfile
+
+      - name: Build release (with verbose logging)
+        run: |
+          export CARGO_BUILD_JOBS=2  # 匹配 GitHub Actions runner 的 2 核 CPU
+          export CARGO_TERM_VERBOSE=true
           export RUSTFLAGS='-A useless_deprecated'
           export WASM_BUILD_TOOLCHAIN=nightly-2024-07-01
-          cargo build --release --locked
+          cargo build --release --locked 2>&1 | tee build.log
+        continue-on-error: false
+        timeout-minutes: 60
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
+      - name: Upload build log (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          name: build-log
+          path: build.log
 
-      - name: Add server to known hosts
+      - name: Setup SSH (configure key permissions and known_hosts)
         run: |
           mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key  # SSH 要求私钥权限必须是 600
           ssh-keyscan -p ${{ env.SERVER_PORT }} ${{ env.SERVER_HOST }} >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Create deployment directory
         run: |
           ssh -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} \
             "mkdir -p ~/deployments/substrate"
+
+      - name: Check binary exists
+        run: |
+          if [ ! -f target/release/minimal-template-node ]; then
+            echo "错误: 二进制文件不存在"
+            ls -la target/release/ || echo "target/release 目录不存在"
+            exit 1
+          fi
+          ls -lh target/release/minimal-template-node
 
       - name: Upload binary to server
         run: |
@@ -111,6 +155,6 @@ jobs:
 
       - name: Verify deployment
         run: |
-          ssh -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} \
+          ssh -i ~/.ssh/deploy_key -p ${{ env.SERVER_PORT }} ${{ env.SERVER_USER }}@${{ env.SERVER_HOST }} \
             "test -f ~/deployments/substrate/minimal-template-node && echo 'Deployment successful' || echo 'Deployment failed'"
 

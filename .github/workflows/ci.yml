@@ -22,11 +22,19 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@1.88.0
-        with:
-          components: rustfmt, clippy, rust-src
-          targets: wasm32-unknown-unknown
+      - name: Install Rust 1.88.0
+        run: |
+          # 确保 rustup 已安装（GitHub Actions 通常已预装）
+          if ! command -v rustup &> /dev/null; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source $HOME/.cargo/env
+          fi
+          rustup toolchain install 1.88.0
+          rustup default 1.88.0
+          rustup component add rustfmt clippy rust-src --toolchain 1.88.0
+          rustup target add wasm32-unknown-unknown --toolchain 1.88.0
+          rustc --version
+          cargo --version
 
       - name: Install nightly toolchain for WASM
         run: |
