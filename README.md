@@ -19,6 +19,8 @@
 
 - [快速开始](#快速开始)
 
+- [Docker 使用](#docker-使用推荐)
+
 - [启动最小模板链](#启动最小模板链)
 
   - [最小模板节点](#最小模板节点)
@@ -65,6 +67,32 @@ git clone https://github.com/paritytech/polkadot-sdk-minimal-template.git minima
 cd minimal-template
 ```
 
+## Docker 使用（推荐）
+
+如果你不想配置本地 Rust 环境，可以直接使用 Docker 运行：
+
+### 快速开始
+
+```sh
+# 使用 Docker Compose（最简单）
+docker-compose up -d
+
+# 查看日志
+docker-compose logs -f
+
+# 停止节点
+docker-compose down
+```
+
+### 详细说明
+
+完整的 Docker 使用指南请查看 [DOCKER_USAGE.md](./DOCKER_USAGE.md)，包括：
+- 🐳 Docker 镜像构建和运行
+- 🔧 常用操作和命令
+- 🛠️ 开发模式配置
+- 🐛 故障排查
+- 📤 从 GitHub 克隆并运行
+
 ## 启动最小模板链
 
 ### 最小模板节点
@@ -75,10 +103,17 @@ cd minimal-template
 cargo build --workspace --release
 ```
 
-🐳 或者，构建 Docker 镜像，该镜像会构建所有工作区成员，并以节点二进制文件作为入口点：
+🐳 **使用 Docker（推荐，无需配置环境）**：
 
 ```sh
-docker build . -t polkadot-sdk-minimal-template
+# 方式 1：使用 Docker Compose（最简单）
+docker-compose up -d
+
+# 方式 2：构建并运行 Docker 镜像
+docker build . -t minimal-template-node
+docker run -d -p 9944:9944 minimal-template-node --dev --rpc-external --ws-external
+
+# 详细说明请查看 [DOCKER_USAGE.md](./DOCKER_USAGE.md)
 ```
 
 #### 启动 `minimal-template-node`

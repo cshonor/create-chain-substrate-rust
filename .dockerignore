@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Rust 构建产物
+target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 文档（可选，如果镜像不需要文档可以忽略）
+*.md
+!README.md
+
+# CI/CD
+.github/
+
+# 部署脚本（镜像中不需要）
+scripts/
+*.sh
+
+# 配置文件（可选）
+.env
+.env.local
+
+# 测试文件
+**/tests/
+**/*_test.rs
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+*.log
+

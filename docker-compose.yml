@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  substrate-node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: minimal-template-node:latest
+    container_name: substrate-minimal-node
+    ports:
+      - "30333:30333"  # P2P 端口
+      - "9933:9933"     # RPC HTTP 端口
+      - "9944:9944"     # RPC WebSocket 端口
+      - "9615:9615"     # Prometheus 指标端口
+    volumes:
+      # 持久化链数据
+      - substrate-data:/data
+      # 可选：挂载本地代码用于开发（取消注释使用）
+      # - ./:/substrate
+    environment:
+      - RUST_LOG=info
+    command:
+      - "--dev"
+      - "--rpc-external"
+      - "--ws-external"
+      - "--rpc-cors=all"
+    restart: unless-stopped
+    networks:
+      - substrate-net
+
+volumes:
+  substrate-data:
+    driver: local
+
+networks:
+  substrate-net:
+    driver: bridge
+
