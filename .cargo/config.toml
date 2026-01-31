@@ -1,0 +1,19 @@
+# 项目级 Cargo 配置
+# 此配置仅影响当前项目，防止依赖自动升级
+
+[build]
+# 使用 --locked 时严格遵循 Cargo.lock
+# 不会自动更新依赖版本
+
+[net]
+# 网络配置
+git-fetch-with-cli = true
+retry = 3
+
+# 如果需要使用国内镜像（可选，取消注释启用）
+# [source.crates-io]
+# replace-with = "tuna"
+# 
+# [source.tuna]
+# registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
+

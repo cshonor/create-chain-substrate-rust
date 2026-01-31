@@ -190,10 +190,131 @@ cargo check --package minimal-template-runtime --package minimal-template-node
 cargo build --workspace --release
 ```
 
+## 常见编译错误和解决方案
+
+### 错误1：`edition = "2024" is required` 或 `rustc version not supported`
+
+**问题根源**：
+- 当前使用的是 Rust 1.79.0（兼容版本），但 Cargo.lock 里的某些依赖包版本过新
+- 这些新包默认启用了 `edition = "2024"`，而 Rust 1.79.0 并不支持这个特性
+- Cargo 配置可能用了国内镜像源（如阿里云），导致依赖包缓存混乱，拉取到的版本和预期不符
+
+**完整修复步骤**：
+
+1. **备份并禁用当前 Cargo 配置**
+   ```bash
+   mv ~/.cargo/config.toml ~/.cargo/config.toml.bak
+   ```
+
+2. **清理问题依赖缓存**
+   ```bash
+   # 清理特定问题依赖（如果知道具体包名）
+   rm -rf ~/.cargo/registry/src/mirrors.aliyun.com-8754fae0eb2f08f1/cranelift-control-0.122.0
+   
+   # 或清理整个缓存（更彻底）
+   rm -rf ~/.cargo/registry/cache
+   rm -rf ~/.cargo/registry/src
+   ```
+
+3. **删除旧的 Cargo.lock**
+   ```bash
+   rm -f Cargo.lock
+   ```
+
+4. **重新生成兼容的依赖锁文件**
+   ```bash
+   cd /root/projects/substrate
+   CARGO_NET_OFFLINE=false cargo generate-lockfile
+   ```
+
+5. **重新编译**
+   ```bash
+   export RUSTFLAGS='-A useless_deprecated'
+   export WASM_BUILD_TOOLCHAIN=nightly-2024-07-01
+   cargo build --release --locked
+   ```
+
+### 错误2：`duplicate lang item in crate core`
+
+**问题根源**：Rust nightly 版本与 Polkadot SDK 的 `build-std` 功能不兼容。
+
+**解决方案**：
+- 使用推荐的 nightly 版本：`nightly-2024-07-01`
+- 确保 `rust-toolchain.toml` 配置正确
+- 使用 `WASM_BUILD_TOOLCHAIN` 环境变量指定 nightly 版本
+
+### 错误3：`no standard library sources found`
+
+**问题根源**：缺少 `rust-src` 组件。
+
+**解决方案**：
+```bash
+rustup component add rust-src --toolchain stable
+rustup component add rust-src --toolchain nightly
+```
+
+## 防止依赖自动升级的配置
+
+为了避免后续遇到类似的依赖版本冲突，可以配置 Cargo 防止依赖自动升级：
+
+### 创建 Cargo 配置
+
+```bash
+mkdir -p ~/.cargo
+cat > ~/.cargo/config.toml << 'EOF'
+# Cargo 配置：防止依赖自动升级
+
+[net]
+# 使用官方源（避免镜像源缓存问题）
+# 如果需要使用镜像，请确保镜像与官方源同步
+
+[build]
+# 禁用自动更新依赖
+# 使用 --locked 参数时，严格遵循 Cargo.lock
+
+[profile.release]
+# 发布版本的优化配置
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = 'abort'
+
+# 如果需要使用国内镜像（可选）
+# [source.crates-io]
+# replace-with = "tuna"
+# 
+# [source.tuna]
+# registry = "https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git"
+EOF
+```
+
+### 项目级配置（推荐）
+
+在项目根目录创建 `.cargo/config.toml`：
+
+```bash
+mkdir -p .cargo
+cat > .cargo/config.toml << 'EOF'
+# 项目级 Cargo 配置
+# 此配置仅影响当前项目
+
+[build]
+# 使用 --locked 时严格遵循 Cargo.lock
+# 不会自动更新依赖版本
+
+[net]
+# 网络配置
+git-fetch-with-cli = true
+retry = 3
+EOF
+```
+
 ## 注意事项
 
 - 建议将项目移到 WSL 的 Linux 文件系统（`~/substrate`）以获得更好的性能
 - 如果使用本地 polkadot-sdk，需要更新 `Cargo.toml` 中的路径配置
 - 编译 WASM 运行时需要 `rust-src` 组件，确保已为使用的工具链安装
+- **重要**：使用 `--locked` 参数构建，确保依赖版本一致性
+- **重要**：如果遇到依赖版本冲突，优先清理缓存并重新生成 `Cargo.lock`
 
 
