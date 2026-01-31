@@ -2,7 +2,7 @@ name: CD - Deploy to Server
 
 on:
   push:
-    branches: [ rebuld ]  # 只有 rebuld 分支触发部署
+    branches: [ main, rebuld ]  # main 和 rebuld 分支触发部署
     tags:
       - 'v*'
   workflow_dispatch:
@@ -32,15 +32,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.86.0
         with:
-          components: rustfmt, clippy
+          components: rustfmt, clippy, rust-src
           targets: wasm32-unknown-unknown
 
-      - name: Install nightly toolchain
+      - name: Install nightly toolchain for WASM
         run: |
-          rustup toolchain install nightly
-          rustup target add wasm32-unknown-unknown --toolchain nightly
+          rustup toolchain install nightly-2024-07-01
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-07-01
 
       - name: Install system dependencies
         run: |

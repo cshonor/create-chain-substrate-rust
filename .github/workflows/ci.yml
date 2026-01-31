@@ -2,9 +2,9 @@ name: CI - Build and Test
 
 on:
   push:
-    branches: [ '*' ]  # 所有分支都触发 CI（构建和测试）
+    branches: [ main, master, rebuld ]  # 主要分支触发 CI
   pull_request:
-    branches: [ '*' ]  # 所有 PR 都触发 CI
+    branches: [ main, master, rebuld ]  # PR 到主要分支时触发 CI
 
 env:
   CARGO_TERM_COLOR: always
@@ -23,15 +23,15 @@ jobs:
           submodules: recursive
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@1.86.0
         with:
-          components: rustfmt, clippy
+          components: rustfmt, clippy, rust-src
           targets: wasm32-unknown-unknown
 
-      - name: Install nightly toolchain
+      - name: Install nightly toolchain for WASM
         run: |
-          rustup toolchain install nightly
-          rustup target add wasm32-unknown-unknown --toolchain nightly
+          rustup toolchain install nightly-2024-07-01
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-07-01
 
       - name: Install system dependencies
         run: |
