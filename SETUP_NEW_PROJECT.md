@@ -4,16 +4,23 @@
 
 **本项目使用 Polkadot SDK 2512.1，必须使用推荐的 Rust 稳定版本，禁止使用最新开发版或未验证的稳定版。**
 
+### 官方推荐的 Rust 版本
+
+根据 Polkadot SDK 2512.1 官方文档：
+- **一般推荐**：最新的稳定版（Rust stable）
+- **特定开发任务**（如 Parachain Template）：Rust 1.86 或更新的稳定版
+- **禁止使用**：开发版（nightly）或未经验证的稳定版
+
 ### 版本不兼容的严重性
 
-Rust 1.93.0（开发版）与 Polkadot SDK 2512.1 的版本不兼容，**并非简单的"版本号不一致"**，而是**底层编译机制、核心库实现、依赖链规则的全面冲突**。这是 Substrate/Polkadot 官方反复强调**"必须使用推荐的 Rust 稳定版，禁止使用最新开发版/未验证稳定版"**的根本原因。
+使用不兼容的 Rust 版本（如开发版或过新的稳定版）与 Polkadot SDK 2512.1 的版本不兼容，**并非简单的"版本号不一致"**，而是**底层编译机制、核心库实现、依赖链规则的全面冲突**。这是 Substrate/Polkadot 官方反复强调**"必须使用推荐的 Rust 稳定版，禁止使用最新开发版/未验证稳定版"**的根本原因。
 
 ### 一、直接可见的影响：触发编译层面的致命错误
 
 这是版本不兼容最直接的表现，直接导致 WASM 运行时编译失败，**无法生成可用的链上运行时代码**：
 
-- Rust 1.93.0（开发版）的 `build-std` 从源码编译 `alloc/core` 库时，对 `exchange_malloc` 等 **Rust 核心 lang item**（语言内置项，不可重复定义）的编译逻辑、符号命名做了微调；
-- 而 Polkadot SDK 2512.1 的底层依赖（如 `sp-std`、`frame-system`）是基于 Rust 1.79.0 稳定版开发的，仍沿用旧的 `alloc` 库链接逻辑，会隐式调用预编译版 `alloc` 的旧符号；
+- 不兼容的 Rust 版本（如开发版或过新的稳定版）的 `build-std` 从源码编译 `alloc/core` 库时，对 `exchange_malloc` 等 **Rust 核心 lang item**（语言内置项，不可重复定义）的编译逻辑、符号命名做了微调；
+- 而 Polkadot SDK 2512.1 的底层依赖（如 `sp-std`、`frame-system`）是基于推荐的 Rust 稳定版（如 Rust 1.86）开发的，仍沿用旧的 `alloc` 库链接逻辑，会隐式调用预编译版 `alloc` 的旧符号；
 - 最终导致**源码编译的新 `alloc`** 和**预编译的旧 `alloc`** 同时被链接，两者的核心 lang item 重复定义，编译器直接抛出致命错误（`E0152 duplicate lang item`），WASM 编译中断。
 
 **简单说**：新版本 Rust 改了"基础语法的底层实现"，旧版本 SDK 还按老规则调用，编译器直接判"语法冲突"，不让编译通过。
@@ -26,8 +33,8 @@ Substrate 编译 WASM 运行时的核心是 **`no_std` + `-Z build-std`** 组合
 
 `-Z build-std` 是 Rust 的实验性功能，不同版本的 Rust 对其支持度、编译参数、源码输出格式差异极大：
 
-- Rust 1.93.0 的 `build-std` 对 `wasm32-unknown-unknown` 目标的编译优化、文件输出路径做了调整；
-- Polkadot SDK 2512.1 的构建脚本（`build.rs`）是按 Rust 1.79.0 的 `build-std` 规则写的，无法识别新版本的输出文件，导致**无法正确找到源码编译的 core/alloc 库**，要么编译失败，要么被迫回退到预编译版 std 库，违背 WASM 运行时的设计初衷。
+- 不兼容的 Rust 版本的 `build-std` 对 `wasm32-unknown-unknown` 目标的编译优化、文件输出路径做了调整；
+- Polkadot SDK 2512.1 的构建脚本（`build.rs`）是按推荐的 Rust 稳定版（如 Rust 1.86）的 `build-std` 规则写的，无法识别不兼容版本的输出文件，导致**无法正确找到源码编译的 core/alloc 库**，要么编译失败，要么被迫回退到预编译版 std 库，违背 WASM 运行时的设计初衷。
 
 #### 2. `no_std` 环境被污染
 
@@ -86,7 +93,7 @@ Substrate 的智能合约（如 ink!）部署、链上运行时升级，都依�
 
 ### 总结
 
-Rust 1.93.0 与 Polkadot SDK 2512.1 的版本不兼容，其影响可总结为 3 个核心点：
+使用不兼容的 Rust 版本（如开发版或未经验证的稳定版）与 Polkadot SDK 2512.1 的版本不兼容，其影响可总结为 3 个核心点：
 
 1. **编译期**：直接触发致命的重复链接错误，无法生成可用的 WASM 运行时；
 2. **底层**：破坏 Substrate `no_std+build-std` 的 WASM 核心编译机制，导致环境污染、功能失效；
@@ -148,11 +155,14 @@ curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/paritytec
 
 2. **Rust 工具链**已配置（**必须使用推荐的稳定版本**）：
    ```bash
-   # 使用稳定版本（不要使用开发版或未验证的稳定版）
+   # 使用稳定版本（推荐 Rust 1.86 或更新的稳定版，不要使用开发版）
    rustup default stable
    
+   # 验证 Rust 版本（应该是 1.86 或更新的稳定版）
+   rustc --version
+   
    # 编译 WASM 运行时需要 rust-src 组件（stable 和 nightly 都需要）
-   rustup component add rust-src --toolchain stable-x86_64-unknown-linux-gnu
+   rustup component add rust-src --toolchain stable
    rustup component add rust-src --toolchain nightly
    rustup target add wasm32-unknown-unknown --toolchain nightly
    ```

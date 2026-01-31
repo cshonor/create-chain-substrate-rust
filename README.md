@@ -53,6 +53,7 @@
 - 👉 请查看适用于您系统的 [Rust 安装说明](https://www.rust-lang.org/tools/install)。
 
 - ⚠️ **重要**：关于 Rust 版本兼容性的详细说明，请查看 [SETUP_NEW_PROJECT.md](./SETUP_NEW_PROJECT.md) 中的 **Rust 版本兼容性警告** 部分。
+- 📖 **官方推荐**：Polkadot SDK 2512.1 推荐使用 Rust 1.86 或更新的稳定版（参考 [Polkadot Developer Docs](https://docs.polkadot.network/)）
 
 - 🛠️ 根据您的操作系统和 Rust 版本，可能需要额外的包来编译此模板 - 请注意 Rust 编译器的输出。
 
