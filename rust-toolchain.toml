@@ -1,8 +1,12 @@
 [toolchain]
-channel = "stable"
+channel = "1.86.0"
 components = ["rustfmt", "clippy"]
 targets = ["wasm32-unknown-unknown"]
 
+# Polkadot SDK 2512.1 版本适配说明：
+# - Parachain Template: 必须使用 Rust 1.86.0（已验证兼容）
+# - 通用 Substrate 开发: 可使用 1.86.0 或 1.88.0（官方构建测试版本）
+# 
 # 注意：Wasm 运行时编译需要使用 WASM_BUILD_TOOLCHAIN 环境变量
 # 指定兼容的 nightly 版本（如 nightly-2024-07-01）
 # 构建命令示例：
